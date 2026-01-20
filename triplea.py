@@ -22,16 +22,7 @@ elif isinstance(banks, list) and banks:
     bank_id = banks[0]["id"]
 
 # -----------------------------
-# 2) Get exchange rate (optional helper for amounts)
-# -----------------------------
-rate = requests.get(
-    f"{BASE_URL}/exchange-rates",
-    headers=HEADERS,
-    params={"from": "BTC", "to": "USD", "source_amount": 1},
-).json()
-
-# -----------------------------
-# 3) Create sender (individual)
+# 2) Create sender (individual)
 # -----------------------------
 sender_payload = {
     "external_id": "sender_external_id_001",
@@ -67,13 +58,13 @@ sender = sender.json()
 sender_id = sender["id"]  # -> used later
 
 # -----------------------------
-# 4) Upload KYC doc (optional / conditional)
+# 3) Upload KYC doc (optional / conditional)
 # -----------------------------
 # If required, set file_path + uncomment.
 file_path = "./PassportDoc"
 doc_data = {
     "external_id": "kyc_external_id_001",
-    "owner_id": sender_id,     # <- from Step 3
+    "owner_id": sender_id,     # <- from Step 2
     "transfer_id": "",         # <- if you already have transfer_id
     "category": "identity_verification",
     "document_type": "passport",
@@ -89,7 +80,7 @@ doc.raise_for_status()
 doc = doc.json()
 
 # -----------------------------
-# 5) Create recipient (if different from sender)
+# 4) Create recipient (if different from sender)
 # -----------------------------
 recipient_payload = {
     **sender_payload,
@@ -107,11 +98,11 @@ recipient = recipient.json()
 recipient_id = recipient["id"]  # -> used later
 
 # -----------------------------
-# 6) Add destination account
+# 5) Add destination account
 # -----------------------------
 destination_payload = {
     "type": "bank_account",
-    "owner_id": recipient_id,                 # <- from Step 5
+    "owner_id": recipient_id,                 # <- from Step 4
     "external_id": "dest_acct_external_001",
     "receiving_institution_id": bank_id,      # <- from Step 1
     "currency": "USD",
@@ -168,13 +159,13 @@ destination = destination.json()
 destination_account_id = destination["id"]  # -> used later
 
 # -----------------------------
-# 7) Prepare transfer (quotation)
+# 6) Prepare transfer (quotation)
 # -----------------------------
 transfer_payload = {
     "external_id": "transfer_external_001",
     "sender_id": sender_id,                       # <- from Step 3
-    "recipient_id": recipient_id,                 # <- from Step 5
-    "destination_account_id": destination_account_id,  # <- from Step 6
+    "recipient_id": recipient_id,                 # <- from Step 4
+    "destination_account_id": destination_account_id,  # <- from Step 5
     "mode": "sending",
     "fee_mode": "excluded",
     "sending_amount": 0.01,
@@ -198,7 +189,7 @@ transfer = transfer.json()
 transfer_id = transfer["id"]  # -> used later
 
 # -----------------------------
-# 8) Confirm transfer
+# 7) Confirm transfer
 # -----------------------------
 confirm_payload = {
     "payment_method": "crypto_page",
@@ -209,7 +200,7 @@ confirm_payload = {
     "card_id": "66f6e46c-f6a1-4af8-a1bd-49666bc01304",
 }
 confirmed = requests.post(
-    f"{BASE_URL}/transfers/{transfer_id}/confirm",   # <- from Step 7
+    f"{BASE_URL}/transfers/{transfer_id}/confirm",   # <- from Step 6
     headers={**HEADERS, "Content-Type": "application/json"},
     json=confirm_payload,
 )
@@ -220,7 +211,7 @@ confirmed = confirmed.json()
 # Get transfer status (poll)
 # -----------------------------
 status = requests.get(
-    f"{BASE_URL}/transfers/{transfer_id}",           # <- from Step 7
+    f"{BASE_URL}/transfers/{transfer_id}",           # <- from Step 6
     headers=HEADERS,
 )
 status.raise_for_status()
